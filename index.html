@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Учёт бумаги</title>
+  <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2563eb">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --gray: #6b7280;
+      --light: #f9fafb;
+      --dark: #111827;
+      --border: #e5e7eb;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+      color: var(--dark);
+      min-height: 100vh;
+      padding: 16px;
+      font-size: 16px;
+    }
+
+    .app-container {
+      background: white;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+      margin: 0 auto;
+      transition: all 0.3s ease;
+    }
+
+    /* Базовые отступы для телефона */
+    .app-container {
+      max-width: 480px;
+    }
+
+    .content {
+      padding: 24px 20px; /* увеличенные внутренние отступы */
+    }
+
+    /* Адаптация для ПК / планшетов */
+    @media (min-width: 601px) {
+      body { padding: 32px; font-size: 17px; }
+      .app-container {
+        max-width: 900px;
+        border-radius: 28px;
+      }
+      .content { padding: 40px 48px; }
+      .header { font-size: 1.9rem; padding: 32px; }
+      label { font-size: 1.05rem; margin: 24px 0 12px; }
+      input, select { padding: 18px 20px; font-size: 1.15rem; }
+      .action-btn, .quick-btn, .secondary-btn { padding: 20px 28px; font-size: 1.12rem; }
+      table th, table td { padding: 18px 16px; font-size: 1rem; }
+      .controls { gap: 20px; }
+    }
+
+    .header {
+      background: var(--primary);
+      color: white;
+      padding: 24px 16px;
+      text-align: center;
+      font-weight: 600;
+      font-size: 1.45rem;
+    }
+
+    .operation-toggle {
+      display: flex;
+      background: #f1f5f9;
+      border-radius: 14px;
+      padding: 6px;
+      margin-bottom: 28px;
+    }
+
+    .toggle-btn {
+      flex: 1;
+      padding: 16px;
+      font-size: 1.08rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      color: var(--gray);
+    }
+
+    .toggle-btn.active {
+      background: white;
+      color: var(--dark);
+      box-shadow: var(--shadow-sm);
+    }
+
+    label {
+      font-size: 0.98rem;
+      font-weight: 600;
+      margin: 20px 0 10px;
+      color: #374151;
+      display: block;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 16px 18px;
+      font-size: 1.12rem;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: #f9fafb;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    select {
+      appearance: none;
+      background: #f9fafb url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%236b7280' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E") no-repeat right 18px center;
+      background-size: 12px;
+      padding-right: 40px;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+    }
+
+    .production-group {
+      background: #fefce8;
+      border-radius: 14px;
+      padding: 20px;
+      margin: 20px 0;
+      border: 1px solid #fef08a;
+    }
+
+    .hidden { display: none !important; }
+
+    .quick-add {
+      display: flex;
+      gap: 12px;
+      margin: 16px 0;
+    }
+
+    .quick-input {
+      flex: 1;
+    }
+
+    .quick-btn {
+      background: var(--success);
+      color: white;
+      border: none;
+      border-radius: 14px;
+      padding: 16px 24px;
+      font-size: 1.05rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .quick-roll {
+      background: #059669;
+      margin-top: 12px;
+    }
+
+    .quick-btn:active {
+      transform: scale(0.98);
+    }
+
+    .action-btn {
+      width: 100%;
+      padding: 20px;
+      font-size: 1.18rem;
+      font-weight: 600;
+      color: white;
+      background: var(--primary);
+      border: none;
+      border-radius: 16px;
+      margin: 28px 0 20px;
+      box-shadow: 0 4px 14px rgba(37,99,235,0.3);
+      transition: all 0.2s;
+    }
+
+    .action-btn:active {
+      transform: translateY(1px);
+      box-shadow: 0 2px 8px rgba(37,99,235,0.25);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      margin: 20px 0;
+    }
+
+    th, td {
+      padding: 16px 14px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      background: #f8fafc;
+      font-weight: 600;
+      color: #4b5563;
+      font-size: 0.95rem;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.88);
+      color: white;
+      padding: 16px 28px;
+      border-radius: 14px;
+      font-weight: 500;
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.4s, transform 0.4s;
+      max-width: 90%;
+      text-align: center;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.35);
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(-15px);
+    }
+
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-top: 40px;
+    }
+
+    .secondary-btn {
+      padding: 16px 24px;
+      font-size: 1.05rem;
+      font-weight: 600;
+      border-radius: 14px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .import-btn {
+      background: var(--primary);
+      color: white;
+    }
+
+    .undo-btn {
+      background: #8b5cf6;
+      color: white;
+    }
+
+    .log-section {
+      margin-top: 40px;
+    }
+
+    .log-header {
+      background: #f1f5f9;
+      padding: 16px 20px;
+      border-radius: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.2s;
+    }
+
+    .log-header:hover {
+      background: #e5e7eb;
+    }
+
+    .log-body {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s ease, padding 0.4s ease;
+      background: #fafafa;
+      border-radius: 0 0 14px 14px;
+      font-family: monospace;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      padding: 0 20px;
+      border: 1px solid var(--border);
+      border-top: none;
+    }
+
+    .log-body.open {
+      max-height: 500px;
+      padding: 20px;
+    }
+
+    .import-input {
+      display: none;
+    }
+
+    @media (min-width: 601px) {
+      .app-container { max-width: 900px; }
+      .content { padding: 40px 48px; }
+      .header { font-size: 1.9rem; padding: 32px; }
+      label { font-size: 1.05rem; margin: 24px 0 12px; }
+      input, select { padding: 18px 20px; font-size: 1.15rem; }
+      .action-btn, .quick-btn, .secondary-btn { padding: 20px 28px; font-size: 1.12rem; }
+      table th, table td { padding: 18px 16px; font-size: 1rem; }
+      .controls { flex-direction: row; flex-wrap: wrap; gap: 20px; }
+      .secondary-btn { flex: 1 1 auto; max-width: 240px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <div class="header">
+      <i class="fas fa-boxes-stacked"></i> Учёт бумаги
+    </div>
+
+    <div class="content">
+
+      <h2>Операция</h2>
+
+      <div class="operation-toggle">
+        <button class="toggle-btn active" onclick="setOperation('add')">
+          <i class="fas fa-plus"></i> Приход
+        </button>
+        <button class="toggle-btn" onclick="setOperation('remove')">
+          <i class="fas fa-minus"></i> Расход
+        </button>
+      </div>
+
+      <label>Тип бумаги</label>
+      <select id="paperType">
+        <option value="">Выберите тип</option>
+      </select>
+
+      <div id="newTypeField">
+        <label>Новый тип (если нет в списке)</label>
+        <input type="text" id="newType" placeholder="FRUX Яблоко">
+      </div>
+
+      <div id="manualQtyField">
+        <label>Количество пачек</label>
+        <input type="number" id="quantity" inputmode="numeric" placeholder="0" min="0">
+
+        <div class="quick-add">
+          <div class="quick-input">
+            <input type="number" id="addAmount" inputmode="numeric" placeholder="Например, 5000" min="1">
+          </div>
+          <button class="quick-btn" onclick="addCustomAmount()">+ Добавить</button>
+        </div>
+
+        <button class="quick-btn quick-roll" onclick="addOneRoll()">
+          +1 рулон (16 000 уп.)
+        </button>
+      </div>
+
+      <div id="productionFields" class="production-group hidden">
+        <label>Произведено упаковок</label>
+        <input type="number" id="produced" inputmode="numeric" placeholder="0" min="0">
+
+        <label>Брак (упаковок)</label>
+        <input type="number" id="defect" inputmode="numeric" placeholder="0" min="0">
+      </div>
+
+      <button class="action-btn" onclick="processOperation()">
+        Выполнить
+      </button>
+
+      <h2>Остатки</h2>
+      <table id="stockTable">
+        <thead>
+          <tr><th>Тип</th><th>Остаток</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <div class="delete-section" style="margin:40px 0 32px;">
+        <label>Удалить номенклатуру</label>
+        <select id="deleteType">
+          <option value="">Выберите номенклатуру</option>
+        </select>
+        <button class="secondary-btn" style="background:#ef4444;color:white;margin-top:16px;" onclick="deleteNom()">
+          Удалить
+        </button>
+      </div>
+
+      <div class="log-section">
+        <div class="log-header" onclick="toggleLog()">
+          <span><i class="fas fa-history"></i> Журнал операций</span>
+          <span id="logToggle">▼</span>
+        </div>
+        <div id="logBody" class="log-body"></div>
+      </div>
+
+      <div class="controls">
+        <button class="secondary-btn import-btn" onclick="document.getElementById('importFile').click()">
+          <i class="fas fa-file-import"></i> Импорт из Excel
+        </button>
+        <input type="file" id="importFile" class="import-input" accept=".xlsx, .xls" onchange="importFromExcel(event)">
+
+        <button id="undoBtn" class="secondary-btn undo-btn hidden" onclick="undoLastAction()">
+          <i class="fas fa-undo"></i> Отменить последнее
+        </button>
+
+        <button class="secondary-btn" style="background:var(--success);color:white;" onclick="exportToExcel()">
+          <i class="fas fa-file-excel"></i> Экспорт в Excel
+        </button>
+        <button class="secondary-btn" style="background:var(--warning);color:white;" onclick="clearLogOnly()">
+          <i class="fas fa-eraser"></i> Очистить журнал
+        </button>
+        <button class="secondary-btn" style="background:var(--danger);color:white;" onclick="clearAll()">
+          <i class="fas fa-trash-alt"></i> Очистить всё
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    let stock = {};
+    let logEntries = [];
+    let history = [];
+    let currentOperation = 'add';
+    let logOpen = false;
+    let lastSelectedType = '';
+
+    const els = {
+      paperType: document.getElementById('paperType'),
+      newType: document.getElementById('newType'),
+      quantity: document.getElementById('quantity'),
+      addAmount: document.getElementById('addAmount'),
+      produced: document.getElementById('produced'),
+      defect: document.getElementById('defect'),
+      deleteType: document.getElementById('deleteType'),
+      stockBody: document.querySelector('#stockTable tbody'),
+      logBody: document.getElementById('logBody'),
+      logToggle: document.getElementById('logToggle'),
+      toast: document.getElementById('toast'),
+      undoBtn: document.getElementById('undoBtn')
+    };
+
+    const ROLL_SIZE = 16000;
+
+    function vibrate(ms = 50) {
+      if (navigator.vibrate) navigator.vibrate(ms);
+    }
+
+    function loadData() {
+  syncLoad();
+}
+
+    function saveData() {
+  syncSave();
+}
+
+    function refreshAll() {
+      updateSelects();
+      updateStockTable();
+      updateLog();
+      updateFields();
+      updateUndoButton();
+    }
+
+    function updateUndoButton() {
+      if (history.length > 0) {
+        els.undoBtn.classList.remove('hidden');
+      } else {
+        els.undoBtn.classList.add('hidden');
+      }
+    }
+
+    function saveStateForUndo() {
+      history.push({
+        stock: JSON.parse(JSON.stringify(stock)),
+        log: [...logEntries]
+      });
+    }
+
+    function undoLastAction() {
+      if (history.length === 0) return;
+
+      const prev = history.pop();
+      stock = prev.stock;
+      logEntries = prev.log;
+
+      saveData();
+      refreshAll();
+
+      showToast('Последнее действие отменено');
+      vibrate(100);
+    }
+
+    function updateSelects() {
+      const types = Object.keys(stock).sort();
+      let html = '<option value="">Выберите тип</option>';
+      types.forEach(t => html += `<option value="${t}">${t}</option>`);
+      els.paperType.innerHTML = html;
+
+      let delHtml = '<option value="">Выберите номенклатуру</option>';
+      types.forEach(t => delHtml += `<option value="${t}">${t}</option>`);
+      els.deleteType.innerHTML = delHtml;
+    }
+
+    function updateStockTable() {
+      let html = '';
+      Object.keys(stock).sort().forEach(t => {
+        html += `<tr><td>${t}</td><td><b>${stock[t]}</b></td></tr>`;
+      });
+      els.stockBody.innerHTML = html || '<tr><td colspan="2" style="text-align:center;color:#9ca3af;">Нет данных</td></tr>';
+    }
+
+    function updateLog() {
+      els.logBody.innerText = logEntries.join('\n\n');
+      els.logBody.classList.toggle('open', logOpen);
+      els.logToggle.textContent = logOpen ? '▲' : '▼';
+    }
+
+    function updateFields() {
+      const isAdd = currentOperation === 'add';
+      document.getElementById('newTypeField').classList.toggle('hidden', !isAdd);
+      document.getElementById('manualQtyField').classList.toggle('hidden', !isAdd);
+      document.getElementById('productionFields').classList.toggle('hidden', isAdd);
+    }
+
+    function addCustomAmount() {
+      const addVal = Number(els.addAmount.value) || 0;
+      if (addVal <= 0) return;
+      const current = Number(els.quantity.value) || 0;
+      els.quantity.value = current + addVal;
+      els.addAmount.value = '';
+      vibrate(60);
+    }
+
+    function addOneRoll() {
+      const current = Number(els.quantity.value) || 0;
+      els.quantity.value = current + ROLL_SIZE;
+      vibrate(80);
+    }
+
+    function setOperation(op) {
+      currentOperation = op;
+      document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+      updateFields();
+    }
+
+    function showToast(message) {
+      els.toast.innerText = message;
+      els.toast.classList.add('show');
+      setTimeout(() => els.toast.classList.remove('show'), 2800);
+    }
+
+    function processOperation() {
+      let type = els.paperType.value.trim();
+
+      if (currentOperation === 'add') {
+        const nt = els.newType.value.trim();
+        if (nt) type = nt;
+      }
+
+      if (!type) return alert('Укажите тип бумаги');
+
+      saveStateForUndo();
+
+      if (!stock[type]) {
+        stock[type] = 0;
+      }
+
+      let change = 0;
+      let logText = '';
+
+      if (currentOperation === 'add') {
+        const qty = Number(els.quantity.value) || 0;
+        change = qty;
+        logText = `приход +${qty}`;
+      } else {
+        const p = Number(els.produced.value) || 0;
+        const d = Number(els.defect.value) || 0;
+        if (p + d === 0) return alert('Укажите произведено и/или брак');
+        change = -(p + d);
+        logText = `расход: пр. ${p} + бр. ${d} = ${p+d}`;
+      }
+
+      if (stock[type] + change < 0) {
+        alert('Недостаточно бумаги');
+        history.pop();
+        return;
+      }
+
+      stock[type] += change;
+      logEntries.unshift(`${new Date().toLocaleString()} | ${logText} | ${type} → ${stock[type]}`);
+
+      saveData();
+      refreshAll();
+
+      showToast(`Остаток по "${type}": ${stock[type]}`);
+      vibrate(120);
+
+      els.newType.value = '';
+      els.quantity.value = '';
+      els.produced.value = '';
+      els.defect.value = '';
+      els.paperType.value = type;
+    }
+
+    function deleteNom() {
+      const t = els.deleteType.value;
+      if (!t) return alert('Выберите номенклатуру');
+      if (!confirm(`Удалить "${t}"?`)) return;
+
+      saveStateForUndo();
+      delete stock[t];
+      saveData();
+      refreshAll();
+      showToast(`Номенклатура "${t}" удалена`);
+    }
+
+    function clearLogOnly() {
+      if (!confirm('Очистить журнал?')) return;
+      logEntries = [];
+      saveData();
+      updateLog();
+    }
+
+    function clearAll() {
+      if (!confirm('Очистить всё?')) return;
+      stock = {};
+      logEntries = [];
+      history = [];
+      localStorage.clear();
+      refreshAll();
+    }
+
+    function toggleLog() {
+      logOpen = !logOpen;
+      updateLog();
+    }
+
+    function exportToExcel() {
+      const data = [['Номенклатура', 'Остаток']];
+      Object.keys(stock).sort().forEach(t => data.push([t, stock[t]]));
+
+      const ws = XLSX.utils.aoa_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Остатки");
+
+      XLSX.writeFile(wb, `бумага_остатки_${new Date().toISOString().slice(0,10)}.xlsx`);
+    }
+
+    function importFromExcel(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, {type: 'array'});
+          const firstSheet = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheet];
+          const json = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+
+          if (json.length < 2) {
+            alert('Файл пустой или не содержит данных');
+            return;
+          }
+
+          saveStateForUndo();
+
+          let imported = 0;
+          for (let i = 1; i < json.length; i++) {
+            const row = json[i];
+            if (row.length < 2) continue;
+
+            const name = (row[0] || '').toString().trim();
+            const value = Number(row[1]) || 0;
+
+            if (name) {
+              stock[name] = value;
+              imported++;
+            }
+          }
+
+          saveData();
+          refreshAll();
+          showToast(`Импортировано ${imported} строк`);
+
+          event.target.value = '';
+        } catch (err) {
+          alert('Ошибка чтения файла: ' + err.message);
+        }
+      };
+
+      reader.readAsArrayBuffer(file);
+    }
+const API = "http://w97884fj.beget.tech/sync.php";
+
+async function syncLoad() {
+  try {
+    const res = await fetch(API);
+    const data = await res.json();
+
+    stock = data.stock || {};
+    logEntries = data.log || [];
+
+    refreshAll();
+  } catch (e) {
+    console.log("Offline mode");
+  }
+}
+
+async function syncSave() {
+  try {
+    await fetch(API, {
+      method: "POST",
+      body: JSON.stringify({ stock, log: logEntries })
+    });
+  } catch (e) {}
+}
+    loadData();
+    setInterval(syncLoad, 3000);
+    if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/sw.js");
+}
+  </script>
+</body>
+</html>
