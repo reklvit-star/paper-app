@@ -1,7 +1,7 @@
 {
   "name": "Учёт бумаги",
   "short_name": "Бумага",
-  "start_url": "/",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#2563eb",
   "theme_color": "#2563eb",
