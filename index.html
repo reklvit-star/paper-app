@@ -522,7 +522,7 @@ async function githubSave() {
       {
         method: "PUT",
         headers: {
-          Authorization: `token ${TOKEN}`,
+          Authorization: `Bearer ${TOKEN}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify(body)
@@ -544,7 +544,7 @@ async function saveHistoryBackup() {
   try {
     const res = await fetch(
       `https://api.github.com/repos/${GITHUB_USER}/${REPO}/contents/${HISTORY_FILE}`,
-      { headers: { Authorization: `token ${TOKEN}` } }
+      { headers: { Authorization: `Bearer ${TOKEN}` } }
     );
 
     const data = await res.json();
@@ -563,7 +563,7 @@ async function saveHistoryBackup() {
       {
         method: "PUT",
         headers: {
-          Authorization: `token ${TOKEN}`,
+          Authorization: `Bearer ${TOKEN}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
@@ -775,7 +775,7 @@ async function saveHistoryBackup() {
     function importFromExcel(event) {
       const file = event.target.files[0];
       if (!file) return;
-
+if (!e.target.result) return;
       const reader = new FileReader();
       reader.onload = function(e) {
         try {
